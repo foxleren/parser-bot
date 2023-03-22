@@ -20,9 +20,11 @@ func setParsingTime() {
 	parsingTime = fmt.Sprintf("%d-%02d-%02d %02d:%02d",
 		t.Year(), t.Month(), t.Day(),
 		t.Hour(), t.Minute())
+	logrus.Printf("Parsing time: %s", parsingTime)
 }
 
 func (b *Bot) compileParser() error {
+	logrus.Println("Started python compilation.")
 	out, err := exec.Command("python3", b.parserData.PythonFile).Output()
 	if err != nil {
 		return err

@@ -11,6 +11,7 @@ const (
 	commandSubscribe      = "subscribe"
 	commandCheckSubscribe = "check_subscription"
 	commandUnsubscribe    = "unsubscribe"
+	commandGetData        = "get_data"
 
 	replyStart          = "Добро пожаловать!\nДля подписки на рассылку введи команду /subscribe. Далее вы будете ежедневно получать новые данные."
 	replyUnknownCommand = "Неизвестная команда."
@@ -60,6 +61,7 @@ func (b *Bot) handleCommandSubscribe(message *tgbotapi.Message) error {
 	var id int
 	id, err := b.repo.CreateSubscriber(subscriber)
 	if err != nil {
+		logrus.Printf("Error in  handleCommandSubscribe(): %v", err.Error())
 		return errUnableToSubscribe
 	}
 
@@ -69,7 +71,7 @@ func (b *Bot) handleCommandSubscribe(message *tgbotapi.Message) error {
 		return err
 	}
 
-	logrus.Printf("Created id: %d", id)
+	logrus.Println("Subscribed successfully. ID: %d", id)
 
 	b.sendData(message.Chat.ID)
 
@@ -79,8 +81,11 @@ func (b *Bot) handleCommandSubscribe(message *tgbotapi.Message) error {
 func (b *Bot) handleCommandUnsubscribe(message *tgbotapi.Message) error {
 	err := b.repo.DeleteSubscriber(message.Chat.ID)
 	if err != nil {
+		logrus.Printf("Error in  handleCommandUnsubscribe(): %v", err.Error())
 		return errUnableToUnsubscribe
 	}
+
+	logrus.Println("Unsubscribed successfully.")
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, successfulUnsubscription)
 	_, err = b.bot.Send(msg)
@@ -97,12 +102,14 @@ func (b *Bot) handleCommandCheckSubscribe(message *tgbotapi.Message) error {
 		msg := tgbotapi.NewMessage(message.Chat.ID, subscriptionStatusBad)
 		_, err = b.bot.Send(msg)
 		if err != nil {
+			logrus.Printf("Error in  handleCommandCheckSubscribe(): %v", err.Error())
 			return err
 		}
 	} else {
 		msg := tgbotapi.NewMessage(message.Chat.ID, subscriptionStatusGood)
 		_, err = b.bot.Send(msg)
 		if err != nil {
+			logrus.Printf("Error in  handleCommandCheckSubscribe(): %v", err.Error())
 			return err
 		}
 	}

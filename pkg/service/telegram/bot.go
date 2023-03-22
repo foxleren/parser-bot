@@ -68,15 +68,22 @@ func (b *Bot) sendDataToSubscribers() {
 	for {
 		err := b.compileParser()
 		if err != nil {
-			logrus.Println(err)
+			logrus.Println("Error while compiling python script: %s", err.Error())
 		}
 
 		subscribers, err := b.repo.GetAllSubscribers()
-		log.Printf("%v", err)
+		if err != nil {
+			log.Printf("Error in GetAllSubscribers(): %v", err.Error())
+			continue
+		}
+
+		logrus.Println("Starting sending data...")
 		for _, sbs := range subscribers {
 			go b.sendData(sbs.ChatId)
 		}
+		logrus.Println("Finishing sending data...")
 
+		logrus.Println("Taking timeout...")
 		time.Sleep(24 * time.Hour)
 	}
 }

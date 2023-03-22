@@ -21,6 +21,7 @@ func (s *SubscriberPostgres) CreateSubscriber(subscriber models.Subscriber) (int
 	row := s.db.QueryRow(createSubscriberQuery, subscriber.ChatId)
 
 	if err := row.Scan(&id); err != nil {
+		logrus.Printf("repo: CreateSubscriber(): %v", err.Error())
 		return 0, err
 	}
 
@@ -34,6 +35,10 @@ func (s *SubscriberPostgres) GetAllSubscribers() ([]models.Subscriber, error) {
 	getAllQuery := fmt.Sprintf("SELECT id, chat_id FROM %s", subscribersTable)
 	err := s.db.Select(&subscribers, getAllQuery)
 
+	if err != nil {
+		logrus.Printf("repo: GetAllSubscribers(): %v", err.Error())
+	}
+
 	return subscribers, err
 }
 
@@ -42,6 +47,10 @@ func (s *SubscriberPostgres) GetSubscriber(chatId int64) (models.Subscriber, err
 	query := fmt.Sprintf("SELECT id, chat_id FROM %s WHERE chat_id = $1", subscribersTable)
 	err := s.db.Get(&subscriber, query, chatId)
 
+	if err != nil {
+		logrus.Printf("repo: GetSubscriber(): %v", err.Error())
+	}
+
 	return subscriber, err
 }
 
@@ -49,7 +58,9 @@ func (s *SubscriberPostgres) DeleteSubscriber(chatId int64) error {
 	deleteCartItemByIDQuery := fmt.Sprintf("DELETE FROM %s WHERE chat_id = %d", subscribersTable, chatId)
 	_, err := s.db.Exec(deleteCartItemByIDQuery)
 
-	logrus.Println(err)
+	if err != nil {
+		logrus.Printf("repo: DeleteSubscriber(): %v", err.Error())
+	}
 
 	return err
 }
