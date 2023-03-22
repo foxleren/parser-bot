@@ -25,13 +25,14 @@ func setParsingTime() {
 
 func (b *Bot) compileParser() error {
 	logrus.Println("Started python compilation.")
-	out, err := exec.Command("python3", b.parserData.PythonFile).Output()
+	cmd := exec.Command("python3", b.parserData.PythonFile)
+	err := cmd.Run()
 	if err != nil {
 		return err
 	}
-
-	parsingUpdateCounter = string(out)
-	logrus.Printf("Result of python compilation: %s\n", out)
+	logrus.Println("Finished python compilation.")
+	//parsingUpdateCounter = string(out)
+	//logrus.Printf("Result of python compilation: %s\n", out)
 
 	setParsingTime()
 
