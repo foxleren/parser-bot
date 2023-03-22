@@ -4,7 +4,6 @@ import (
 	"github.com/foxleren/parser-bot/pkg/models"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/siruspen/logrus"
-	"log"
 )
 
 const (
@@ -18,11 +17,8 @@ const (
 
 	successfulSubscription   = "Вы успешно подписались на рассылку!"
 	successfulUnsubscription = "Вы успешно отписались от рассылки."
-	failedUnsubscription     = "Не удалось отписаться от рассылки."
 	subscriptionStatusGood   = "Статус подписки: активирована."
 	subscriptionStatusBad    = "Статус подписки: деактивирована."
-
-	subscribeError = "Не удалось подписаться на рассылку либо вы уже подписаны. Для проверки подписки используйте команду \n/check_subscribe."
 )
 
 func (b *Bot) handleCommand(message *tgbotapi.Message) error {
@@ -31,31 +27,28 @@ func (b *Bot) handleCommand(message *tgbotapi.Message) error {
 		return b.handleCommandStart(message)
 	case commandSubscribe:
 		return b.handleCommandSubscribe(message)
-	case commandCheckSubscribe:
-		return b.handleCommandCheckSubscribe(message)
 	case commandUnsubscribe:
 		return b.handleCommandUnsubscribe(message)
+	case commandCheckSubscribe:
+		return b.handleCommandCheckSubscribe(message)
 	default:
 		return b.handleUnknownCommand(message)
 	}
 }
 
-func (b *Bot) handleMessage(message *tgbotapi.Message) error {
-	log.Printf("[%s] %s", message.From.UserName, message.Text)
-
-	msg := tgbotapi.NewMessage(message.Chat.ID, message.Text)
-	msg.ReplyToMessageID = message.MessageID
-
-	_, err := b.bot.Send(msg)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
+//func (b *Bot) handleMessage(message *tgbotapi.Message) error {
+//	return nil
+//}
 
 func (b *Bot) handleCommandStart(message *tgbotapi.Message) error {
 	msg := tgbotapi.NewMessage(message.Chat.ID, replyStart)
+	_, err := b.bot.Send(msg)
+
+	return err
+}
+
+func (b *Bot) handleUnknownCommand(message *tgbotapi.Message) error {
+	msg := tgbotapi.NewMessage(message.Chat.ID, replyUnknownCommand)
 	_, err := b.bot.Send(msg)
 
 	return err
@@ -65,35 +58,20 @@ func (b *Bot) handleCommandSubscribe(message *tgbotapi.Message) error {
 	subscriber := models.Subscriber{ChatId: message.Chat.ID}
 
 	var id int
-	id, bd_err := b.repo.CreateSubscriber(subscriber)
-	if bd_err != nil {
-		logrus.Printf("%v", bd_err)
-		msg := tgbotapi.NewMessage(message.Chat.ID, subscribeError)
-		_, err := b.bot.Send(msg)
-		return err
+	id, err := b.repo.CreateSubscriber(subscriber)
+	if err != nil {
+		return errUnableToSubscribe
 	}
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, successfulSubscription)
-	_, err := b.bot.Send(msg)
+	_, err = b.bot.Send(msg)
+	if err != nil {
+		return err
+	}
 
 	logrus.Printf("Created id: %d", id)
 
-	b.sendMessage(message.Chat.ID)
-
-	return err
-}
-
-func (b *Bot) handleCommandCheckSubscribe(message *tgbotapi.Message) error {
-	_, err := b.repo.GetSubscriber(message.Chat.ID)
-	if err != nil {
-		logrus.Printf("%v", err)
-
-		msg := tgbotapi.NewMessage(message.Chat.ID, subscriptionStatusBad)
-		b.bot.Send(msg)
-	} else {
-		msg := tgbotapi.NewMessage(message.Chat.ID, subscriptionStatusGood)
-		b.bot.Send(msg)
-	}
+	b.sendData(message.Chat.ID)
 
 	return nil
 }
@@ -101,21 +79,33 @@ func (b *Bot) handleCommandCheckSubscribe(message *tgbotapi.Message) error {
 func (b *Bot) handleCommandUnsubscribe(message *tgbotapi.Message) error {
 	err := b.repo.DeleteSubscriber(message.Chat.ID)
 	if err != nil {
-		logrus.Printf("%v", err)
+		return errUnableToUnsubscribe
+	}
 
-		msg := tgbotapi.NewMessage(message.Chat.ID, failedUnsubscription)
-		b.bot.Send(msg)
-	} else {
-		msg := tgbotapi.NewMessage(message.Chat.ID, successfulUnsubscription)
-		b.bot.Send(msg)
+	msg := tgbotapi.NewMessage(message.Chat.ID, successfulUnsubscription)
+	_, err = b.bot.Send(msg)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (b *Bot) handleUnknownCommand(message *tgbotapi.Message) error {
-	msg := tgbotapi.NewMessage(message.Chat.ID, replyUnknownCommand)
-	_, err := b.bot.Send(msg)
+func (b *Bot) handleCommandCheckSubscribe(message *tgbotapi.Message) error {
+	_, err := b.repo.GetSubscriber(message.Chat.ID)
+	if err != nil {
+		msg := tgbotapi.NewMessage(message.Chat.ID, subscriptionStatusBad)
+		_, err = b.bot.Send(msg)
+		if err != nil {
+			return err
+		}
+	} else {
+		msg := tgbotapi.NewMessage(message.Chat.ID, subscriptionStatusGood)
+		_, err = b.bot.Send(msg)
+		if err != nil {
+			return err
+		}
+	}
 
-	return err
+	return nil
 }

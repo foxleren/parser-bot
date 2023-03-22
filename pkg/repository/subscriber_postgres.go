@@ -46,8 +46,10 @@ func (s *SubscriberPostgres) GetSubscriber(chatId int64) (models.Subscriber, err
 }
 
 func (s *SubscriberPostgres) DeleteSubscriber(chatId int64) error {
-	deleteCartItemByIDQuery := fmt.Sprintf("DELETE FROM %s sbs WHERE sbs.chat_id = %d", subscribersTable, chatId)
+	deleteCartItemByIDQuery := fmt.Sprintf("DELETE FROM %s WHERE chat_id = %d", subscribersTable, chatId)
 	_, err := s.db.Exec(deleteCartItemByIDQuery)
+
+	logrus.Println(err)
 
 	return err
 }
