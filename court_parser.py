@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 import pandas as pd
@@ -24,7 +24,7 @@ pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 
 
-# In[2]:
+# In[ ]:
 
 
 def pickle_dump(data, file_name):
@@ -71,7 +71,7 @@ def protected_get_html_soup_num(href, class_name='resultsearch_text', num=5):
     return -1
 
 
-# In[3]:
+# In[ ]:
 
 
 court_dict = {
@@ -116,21 +116,21 @@ court_dict = {
 possible_names = ['скилбокс', 'скиллбокс', 'skillbox']
 
 
-# In[4]:
+# In[ ]:
 
 
 res_num = pickle_load('res_num.pkl')
 res_num
 
 
-# In[5]:
+# In[ ]:
 
 
 res_data = pickle_load('res_data.pkl')
 res_data.head()
 
 
-# In[6]:
+# In[ ]:
 
 
 def get_court_data(name='скилбокс'):
@@ -211,54 +211,94 @@ def get_court_data(name='скилбокс'):
     return pd.DataFrame(res_data)
 
 
-# In[7]:
+# In[ ]:
 
 
 res_data1 = get_court_data()
 res_data1.head()
 
 
-# In[8]:
+# In[ ]:
 
 
 # res_data2 = get_court_data('skilbox')
 # res_data2.head()
 
 
-# In[9]:
+# In[ ]:
 
 
 # res_data = pd.concat([res_data, res_data2], ignore_index=True)
 # res_data.head()
 
 
-# In[10]:
+# In[ ]:
 
 
 pickle_dump(res_data, 'res_data.pkl')
 
 
-# In[11]:
+# In[ ]:
 
 
 # res_data.to_excel('court_data.xlsx')
 
 
-# In[15]:
+# In[ ]:
 
 
-res_data
+# len(res_data)
 
 
-# In[14]:
+# In[ ]:
 
 
 file_path = 'court_data.xlsx'
 
+
+# In[ ]:
+
+
+global prev_df
+new_lines_counter = 0
+
+
+# In[ ]:
+
+
+def highlight_new_rows(row):
+    if not prev_df.empty and any([val not in prev_df.values for val in row.values]):
+        return ['background-color: #9EC3EF'] * len(row)
+    else:
+        return [''] * len(row)
+def highlight_all_rows(row):
+    return ['background-color: #9EC3EF'] * len(row)
+
+
+# In[ ]:
+
+
 if os.path.isfile(file_path):
-    prev_df = pd.read_excel(file_path)
-    new_rows = res_data[~res_data.isin(prev_df)].dropna()
-    new_rows.to_excel(file_path)
+    prev_df = pd.read_excel('court_data.xlsx')
+    diff = pd.concat([prev_df, res_data]).drop_duplicates(keep=False)
+    new_lines_counter = len(diff)
+    merged_table = pd.merge(prev_df,res_data, how='outer')
+    merged_table.fillna(value='', inplace=True)
+    merged_table.style.apply(highlight_new_rows, axis=1).to_excel(file_path, engine='openpyxl', index=False)
 else:
-    res_data.to_excel(file_path)
+    new_lines_counter = len(res_data)
+    res_data.style.apply(highlight_all_rows, axis=1).to_excel('court_data.xlsx', index=False)
+
+
+# In[ ]:
+
+
+import subprocess
+
+
+# In[ ]:
+
+
+text = str(new_lines_counter)
+subprocess.run(["echo", text])
 
