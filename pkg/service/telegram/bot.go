@@ -84,7 +84,7 @@ func (b *Bot) sendDataToSubscribers() {
 		logrus.Println("Finishing sending data...")
 
 		logrus.Println("Taking timeout...")
-		time.Sleep(24 * time.Hour)
+		time.Sleep(24 * time.Second)
 	}
 }
 
